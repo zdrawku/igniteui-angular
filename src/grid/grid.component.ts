@@ -25,6 +25,7 @@ import { cloneArray } from "../core/utils";
 import { DataType } from "../data-operations/data-util";
 import { FilteringLogic } from "../data-operations/filtering-expression.interface";
 import { SortingDirection } from "../data-operations/sorting-expression.interface";
+import { ISortingExpression } from "../main";
 import { IgxGridAPIService } from "./api.service";
 import { IgxGridCellComponent } from "./cell.component";
 import { IgxColumnComponent } from "./column.component";
@@ -34,11 +35,11 @@ let NEXT_ID = 0;
 
 @Component({
     changeDetection: ChangeDetectionStrategy.OnPush,
-    selector: "igx-grid",
-    templateUrl: "./grid.component.html",
-    styleUrls: ["./grid.component.scss"],
     encapsulation: ViewEncapsulation.None,
-    preserveWhitespaces: false
+    preserveWhitespaces: false,
+    selector: "igx-grid",
+    styleUrls: ["./grid.component.scss"],
+    templateUrl: "./grid.component.html"
 })
 export class IgxGridComponent implements OnInit, AfterContentInit {
 
@@ -49,7 +50,7 @@ export class IgxGridComponent implements OnInit, AfterContentInit {
     public autogenerate = false;
 
     @Input()
-    public id = `igx-grid-top-${NEXT_ID++}`;
+    public id = `igx-grid-${NEXT_ID++}`;
 
     @Input()
     get filteringLogic(): string {
@@ -77,7 +78,7 @@ export class IgxGridComponent implements OnInit, AfterContentInit {
 
     set paging(value: boolean) {
         this._paging = value;
-        this._refresh = !this._refresh;
+        this._pipeTrigger++;
         this.cdr.markForCheck();
     }
 
@@ -152,21 +153,31 @@ export class IgxGridComponent implements OnInit, AfterContentInit {
     @HostBinding("attr.tabindex")
     public tabindex = 0;
 
-    get refresh() {
-        return this._refresh;
+    get pipeTrigger(): number {
+        return this._pipeTrigger;
     }
 
-    public sortingExpressions = [];
+    @Input()
+    get sortingExpressions() {
+        return this._sortingExpressions;
+    }
+
+    set sortingExpressions(value) {
+        this._sortingExpressions = cloneArray(value);
+        this.cdr.markForCheck();
+    }
 
     public pagingState;
 
+    public cellInEditMode: IgxGridCellComponent;
     protected _perPage = 15;
     protected _page = 0;
     protected _paging = false;
-    protected _refresh = false;
+    protected _pipeTrigger = 0;
     protected _columns = [];
     protected _filteringLogic = FilteringLogic.And;
     protected _filteringExpressions = [];
+    protected _sortingExpressions = [];
 
     private sub$: Subscription;
 
@@ -248,35 +259,50 @@ export class IgxGridComponent implements OnInit, AfterContentInit {
         this.page = val;
     }
 
-    public addRow(data: any) {
+    public addRow(data: any): void {
         this.data.push(data);
-        this.onRowDeleted.emit({ data });
-        this._refresh = !this._refresh;
+        this.onRowAdded.emit({ data });
+        this._pipeTrigger++;
         this.cdr.markForCheck();
     }
 
-    public deleteRow(rowIndex: number) {
-        const index = this.data.indexOf(this.gridAPI.get_row(this.id, rowIndex).rowData);
+    public deleteRow(rowIndex: number): void {
         const row = this.gridAPI.get_row(this.id, rowIndex);
-        if (index > -1) {
+        if (row) {
+            const index = this.data.indexOf(row.rowData);
             this.data.splice(index, 1);
             this.onRowDeleted.emit({ row });
-            this._refresh = !this._refresh;
+            this._pipeTrigger++;
             this.cdr.markForCheck();
         }
     }
 
-    public sort(name: string, direction = SortingDirection.Asc) {
+    public updateCell(value: any, rowIndex: number, column: string): void {
+        const cell = this.gridAPI.get_cell_by_field(this.id, rowIndex, column);
+        if (cell) {
+            cell.value = value;
+            this._pipeTrigger++;
+        }
+    }
+
+    public updateRow(value: any, rowIndex: number): void {
+        const row = this.gridAPI.get_row(this.id, rowIndex);
+        if (row) {
+            this.gridAPI.updateRow(value, this.id, row);
+            this._pipeTrigger++;
+            this.cdr.markForCheck();
+        }
+    }
+
+    public sort(name: string, direction = SortingDirection.Asc): void {
         this.gridAPI.sort(this.id, name, direction);
-        this.cdr.markForCheck();
     }
 
-    public sortMultiple(exprArray) {
+    public sortMultiple(exprArray): void {
         this.gridAPI.sort_multiple(this.id, exprArray);
-        this.cdr.markForCheck();
     }
 
-    public filter(name: string, value: any, condition?, ignoreCase?) {
+    public filter(name: string, value: any, condition?, ignoreCase?): void {
         const col = this.gridAPI.get_column_by_name(this.id, name);
         if (!col) {
             return;
