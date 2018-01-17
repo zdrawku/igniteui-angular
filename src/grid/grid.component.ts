@@ -21,6 +21,7 @@ import {
     ViewEncapsulation
 } from "@angular/core";
 import { Subscription } from "rxjs/Subscription";
+import { cloneArray } from "../core/utils";
 import { DataType } from "../data-operations/data-util";
 import { FilteringLogic } from "../data-operations/filtering-expression.interface";
 import { SortingDirection } from "../data-operations/sorting-expression.interface";
@@ -28,7 +29,6 @@ import { IgxGridAPIService } from "./api.service";
 import { IgxGridCellComponent } from "./cell.component";
 import { IgxColumnComponent } from "./column.component";
 import { IgxGridRowComponent } from "./row.component";
-import { cloneArray } from "../core/utils";
 
 let NEXT_ID = 0;
 
