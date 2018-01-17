@@ -7,7 +7,7 @@ import { BOOLEAN_FILTERS, DATE_FILTERS, FilteringCondition,
 import { IgxGridComponent } from "./grid.component";
 import { IgxGridModule } from "./index";
 
-fdescribe("IgxGrid - Filtering actions", () => {
+describe("IgxGrid - Filtering actions", () => {
     beforeEach(async(() => {
         TestBed.configureTestingModule({
             declarations: [
