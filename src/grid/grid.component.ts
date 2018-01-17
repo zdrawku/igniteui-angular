@@ -28,6 +28,7 @@ import { IgxGridAPIService } from "./api.service";
 import { IgxGridCellComponent } from "./cell.component";
 import { IgxColumnComponent } from "./column.component";
 import { IgxGridRowComponent } from "./row.component";
+import { cloneArray } from "../core/utils";
 
 let NEXT_ID = 0;
 
@@ -57,6 +58,16 @@ export class IgxGridComponent implements OnInit, AfterContentInit {
 
     set filteringLogic(value: string) {
         this._filteringLogic = (value === "OR") ? FilteringLogic.Or : FilteringLogic.And;
+    }
+
+    @Input()
+    get filteringExpressions() {
+        return this._filteringExpressions;
+    }
+
+    set filteringExpressions(value) {
+        this._filteringExpressions = cloneArray(value);
+        this.cdr.markForCheck();
     }
 
     @Input()
@@ -149,14 +160,13 @@ export class IgxGridComponent implements OnInit, AfterContentInit {
 
     public pagingState;
 
-    public filteringExpressions = [];
-
     protected _perPage = 15;
     protected _page = 0;
     protected _paging = false;
     protected _refresh = false;
     protected _columns = [];
     protected _filteringLogic = FilteringLogic.And;
+    protected _filteringExpressions = [];
 
     private sub$: Subscription;
 
@@ -274,14 +284,25 @@ export class IgxGridComponent implements OnInit, AfterContentInit {
         this.gridAPI.filter(
             this.id, name, value, condition || col.filteringCondition, ignoreCase || col.filteringIgnoreCase);
         this.page = 0;
-        this.cdr.markForCheck();
     }
 
     public filterGlobal(value: any, condition?, ignoreCase?) {
         // TODO: AND OR Filtering logic
         this.gridAPI.filterGlobal(this.id, value, condition, ignoreCase);
         this.page = 0;
-        this.cdr.markForCheck();
+    }
+
+    public clearFilter(name: string) {
+        const col = this.gridAPI.get_column_by_name(this.id, name);
+        if (!col) {
+            return;
+        }
+
+        this.gridAPI.clear_filter(this.id, name);
+    }
+
+    public clearFilterAll() {
+
     }
 
     get hasSortableColumns(): boolean {
